@@ -27,7 +27,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
-import android.graphics.Rect;
 import android.graphics.YuvImage;
 
 import java.io.ByteArrayOutputStream;
@@ -104,13 +103,14 @@ public class RealAIDetectionActivity extends BaseAccessibleActivity {
             currentLanguage = getIntent().getStringExtra("language");
         }
         
-        // 檢查是否需要自動開始檢測
-        if (getIntent() != null && getIntent().hasExtra("auto_start")) {
-            shouldAutoStart = getIntent().getBooleanExtra("auto_start", false);
+        // 出行協助：auto_start；語音命令「前方有什麼」等：auto_start_detection
+        if (getIntent() != null) {
+            shouldAutoStart = getIntent().getBooleanExtra("auto_start", false)
+                    || getIntent().getBooleanExtra("auto_start_detection", false);
         }
 
         // Initialize TTS
-        ttsManager = TTSManager.getInstance(this);
+        ttsManager =TTSManager.getInstance(this);
         ttsManager.changeLanguage(currentLanguage);
 
         initViews();
@@ -338,18 +338,13 @@ public class RealAIDetectionActivity extends BaseAccessibleActivity {
             updateStatusIndicator("ready");
             startButton.setEnabled(true);
             
-            // 如果需要自動開始檢測，在相機設置完成後自動啟動
-            if (shouldAutoStart && yoloDetector != null && !isDetecting) {
-                // 延遲一小段時間確保相機完全準備好
-                new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (yoloDetector != null && !isDetecting && !isFinishing()) {
-                            Log.d(TAG, "自動開始環境識別檢測");
-                            startDetection();
-                        }
+            if (shouldAutoStart) {
+                new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                    if (yoloDetector != null && !isDetecting && !isFinishing()) {
+                        Log.d(TAG, "Auto-starting detection (travel assistant or voice)");
+                        startDetection();
                     }
-                }, 1500); // 延遲1.5秒確保相機完全準備好
+                }, 1500);
             }
 
         } catch (Exception e) {

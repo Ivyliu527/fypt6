@@ -181,6 +181,7 @@
     <string name="document_started_message">相機已啟動，請將文件或貨幣放在掃描區域，然後點擊拍攝掃描。系統將識別文字內容和貨幣金額</string>
     <string name="no_content_detected">未檢測到內容</string>
     <string name="scan_results_placeholder">掃描結果將顯示在這裡</string>
+    <string name="scan_results_title">掃描結果</string>
     <string name="ready_to_scan">準備掃描</string>
     <string name="results_cleared">結果已清除</string>
     <string name="back_to_home">返回主頁</string>

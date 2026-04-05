@@ -6,6 +6,7 @@ import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -50,30 +51,43 @@ public class CurrencyDetector {
      * @return 貨幣檢測結果列表
      */
     public List<CurrencyResult> detectCurrency(Bitmap bitmap) {
-        List<CurrencyResult> results = new ArrayList<>();
-        
+        return detectCurrency(bitmap, 0);
+    }
+
+    /**
+     * 檢測圖片中的貨幣（支持 OCR 旋轉角度）
+     */
+    public List<CurrencyResult> detectCurrency(Bitmap bitmap, int rotationDegrees) {
+        Map<String, CurrencyResult> uniqueResults = new LinkedHashMap<>();
+
         try {
             // 使用OCR識別文字
-            List<OCRHelper.OCRResult> ocrResults = ocrHelper.recognizeText(bitmap);
-            
+            List<OCRHelper.OCRResult> ocrResults = ocrHelper.recognizeText(bitmap, rotationDegrees);
+
             // 分析OCR結果尋找貨幣信息
             for (OCRHelper.OCRResult ocrResult : ocrResults) {
                 CurrencyResult currencyResult = analyzeTextForCurrency(ocrResult.getText());
-                if (currencyResult != null) {
-                    results.add(currencyResult);
+                if (currencyResult != null && currencyResult.getConfidence() >= 0.6f) {
+                    String key = currencyResult.getAmount() + "-" + currencyResult.getType();
+                    if (!uniqueResults.containsKey(key) || uniqueResults.get(key).getConfidence() < currencyResult.getConfidence()) {
+                        uniqueResults.put(key, currencyResult);
+                    }
                 }
             }
-            
-            // 如果沒有通過文字識別到貨幣，嘗試圖像分析
-            if (results.isEmpty()) {
-                results.addAll(analyzeImageForCurrency(bitmap));
-            }
-            
+
+            // 移除不准确的图像分析，避免误识别
+            // if (uniqueResults.isEmpty()) {
+            //     for (CurrencyResult cr : analyzeImageForCurrency(bitmap)) {
+            //         String key = cr.getAmount() + "-" + cr.getType();
+            //         uniqueResults.putIfAbsent(key, cr);
+            //     }
+            // }
+
         } catch (Exception e) {
             Log.e(TAG, "貨幣檢測失敗: " + e.getMessage());
         }
-        
-        return results;
+
+        return new ArrayList<>(uniqueResults.values());
     }
     
     /**
@@ -83,43 +97,39 @@ public class CurrencyDetector {
         if (text == null || text.trim().isEmpty()) {
             return null;
         }
-        
+
         String cleanText = text.replaceAll("\\s+", "").toLowerCase();
-        
-        // 檢查港幣相關關鍵詞
-        if (cleanText.contains("港幣") || cleanText.contains("hk$") || 
-            cleanText.contains("hongkong") || cleanText.contains("hkd")) {
-            
-            // 尋找數字
-            Pattern numberPattern = Pattern.compile("\\d+");
-            Matcher matcher = numberPattern.matcher(text);
-            
-            while (matcher.find()) {
-                String number = matcher.group();
-                CurrencyInfo info = CURRENCY_FEATURES.get(number);
-                
-                if (info != null) {
-                    return new CurrencyResult(
-                        info.getName(),
-                        number,
-                        info.getColor(),
-                        info.getDesign(),
-                        info.getType(),
-                        0.8f, // 基於文字識別的置信度
-                        "文字識別"
-                    );
-                }
+
+        // 简化的货币识别：先找数字，再验证上下文
+        Pattern numberPattern = Pattern.compile("\\b(\\d+)\\b");
+        Matcher numberMatcher = numberPattern.matcher(text);
+
+        while (numberMatcher.find()) {
+            String potentialAmount = numberMatcher.group(1);
+
+            // 检查这个数字是否是支持的港币面额
+            CurrencyInfo info = CURRENCY_FEATURES.get(potentialAmount);
+            if (info != null && isValidCurrencyContext(text, potentialAmount)) {
+                return new CurrencyResult(
+                    info.getName(),
+                    potentialAmount,
+                    info.getColor(),
+                    info.getDesign(),
+                    info.getType(),
+                    0.75f, // 降低置信度阈值
+                    "文字識別"
+                );
             }
         }
-        
-        // 檢查數字模式（如：$100, HK$50等）
-        Pattern currencyPattern = Pattern.compile("(?:hk\\$|\\$|港幣)?\\s*(\\d+)\\s*(?:港幣|hkd)?", Pattern.CASE_INSENSITIVE);
-        Matcher currencyMatcher = currencyPattern.matcher(text);
-        
-        while (currencyMatcher.find()) {
-            String amount = currencyMatcher.group(1);
+
+        // 检查更具体的货币符号模式（如：HK$100, $50港幣等）
+        Pattern currencySymbolPattern = Pattern.compile("\\b(?:hk\\$|\\$)\\s*(\\d+)\\b", Pattern.CASE_INSENSITIVE);
+        Matcher symbolMatcher = currencySymbolPattern.matcher(text);
+
+        while (symbolMatcher.find()) {
+            String amount = symbolMatcher.group(1);
             CurrencyInfo info = CURRENCY_FEATURES.get(amount);
-            
+
             if (info != null) {
                 return new CurrencyResult(
                     info.getName(),
@@ -127,15 +137,51 @@ public class CurrencyDetector {
                     info.getColor(),
                     info.getDesign(),
                     info.getType(),
-                    0.9f, // 基於貨幣符號的置信度
+                    0.8f, // 降低置信度阈值
                     "貨幣符號識別"
                 );
             }
         }
-        
+
         return null;
     }
-    
+
+    /**
+     * 检查货币识别的上下文是否有效
+     */
+    private boolean isValidCurrencyContext(String text, String amount) {
+        // 对于货币符号模式（HK$100），不需要额外上下文检查
+        if (text.toLowerCase().contains("hk$") || text.toLowerCase().contains("$")) {
+            return true;
+        }
+
+        // 对于很短的文本（可能是货币标签），直接认为是有效的
+        if (text.trim().length() < 30) {
+            return true;
+        }
+
+        // 确保不是孤立的数字（比如电话号码、日期等）
+        int amountIndex = text.toLowerCase().indexOf(amount.toLowerCase());
+        if (amountIndex == -1) return false;
+
+        String contextBefore = text.substring(0, amountIndex).toLowerCase();
+        String contextAfter = text.substring(amountIndex + amount.length()).toLowerCase();
+
+        // 检查前后是否有货币相关的上下文
+        boolean hasCurrencyContext = contextBefore.contains("港幣") ||
+                                   contextBefore.contains("hk$") ||
+                                   contextBefore.contains("hkd") ||
+                                   contextBefore.contains("元") ||
+                                   contextBefore.contains("dollar") ||
+                                   contextAfter.contains("港幣") ||
+                                   contextAfter.contains("hk$") ||
+                                   contextAfter.contains("hkd") ||
+                                   contextAfter.contains("元") ||
+                                   contextAfter.contains("dollar");
+
+        return hasCurrencyContext;
+    }
+
     /**
      * 分析圖像特徵尋找貨幣（簡化實現）
      */
@@ -224,8 +270,6 @@ public class CurrencyDetector {
             sb.append(String.format("%d. %s\n", i + 1, result.getName()));
             sb.append(String.format("   面額：%s元\n", result.getAmount()));
             sb.append(String.format("   類型：%s\n", result.getType()));
-            sb.append(String.format("   顏色：%s\n", result.getColor()));
-            sb.append(String.format("   圖案：%s\n", result.getDesign()));
             sb.append(String.format("   置信度：%.0f%%\n", result.getConfidence() * 100));
             sb.append(String.format("   識別方式：%s\n\n", result.getDetectionMethod()));
         }

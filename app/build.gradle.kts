@@ -30,9 +30,28 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    
+
     kotlinOptions {
         jvmTarget = "11"
+    }
+
+    // --- 核心修改部分：解決文件衝突 ---
+    packaging {
+        resources {
+            // 解決 common.properties 衝突
+            pickFirsts.add("common.properties")
+            pickFirsts.add("META-INF/common.properties")
+
+            // 解決你最新的報錯：META-INF/DEPENDENCIES 衝突
+            pickFirsts.add("META-INF/DEPENDENCIES")
+
+            // 預防性排除其他常見的元數據衝突文件
+            excludes.add("META-INF/LICENSE")
+            excludes.add("META-INF/NOTICE")
+            excludes.add("META-INF/LICENSE.txt")
+            excludes.add("META-INF/NOTICE.txt")
+            excludes.add("META-INF/ASL2.0")
+        }
     }
 }
 
@@ -58,24 +77,19 @@ dependencies {
     implementation("org.tensorflow:tensorflow-lite-support:0.4.4")
     implementation("org.tensorflow:tensorflow-lite-gpu:2.14.0")
     implementation("org.tensorflow:tensorflow-lite-task-vision:0.4.4")
-    
+
     // ONNX Runtime (可選：用於 ONNX 模型)
     implementation("com.microsoft.onnxruntime:onnxruntime-android:1.16.0")
 
     // Google ML Kit for OCR text recognition
     implementation("com.google.mlkit:text-recognition:16.0.0")
     implementation("com.google.mlkit:text-recognition-chinese:16.0.0")
-    
     // Google ML Kit Image Labeling (本地模型)
     implementation("com.google.mlkit:image-labeling:17.0.7")
-    
-    // Google ML Kit Object Detection (免費開源，官方維護，長期支持)
-    // 注意：如果網絡無法訪問，可以暫時註釋掉這兩行
+
+    // Google ML Kit Object Detection（可選，網絡不可用時可註釋）
     // implementation("com.google.mlkit:object-detection:17.0.1")
     // implementation("com.google.mlkit:object-detection-custom:17.0.1")
-    
-    // 暫時使用TensorFlow Lite作為主要檢測器（避免網絡問題）
-    // 網絡恢復後可以取消上面的註釋，啟用ML Kit
 
     // Google Location Services (僅用於緊急求助時發送位置)
     implementation("com.google.android.gms:play-services-location:21.0.1")
@@ -85,13 +99,16 @@ dependencies {
 
     // Agora RTC SDK for video calling
     implementation("io.agora.rtc:full-sdk:4.3.0")
-    
+
     // OkHttp for HTTP requests
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
-    
+
     // Gson for JSON parsing
     implementation("com.google.code.gson:gson:2.10.1")
+
+    // 阿里云OSS SDK for file upload
+    implementation("com.aliyun.oss:aliyun-sdk-oss:3.17.1")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)

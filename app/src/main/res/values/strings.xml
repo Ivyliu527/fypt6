@@ -203,6 +203,7 @@
     <string name="document_started_message">Camera started, place document or currency in scan area, then tap to capture and scan. System will recognize text content and currency amount</string>
     <string name="no_content_detected">No content detected</string>
     <string name="scan_results_placeholder">Scan results will be displayed here...</string>
+    <string name="scan_results_title">Scan Results</string>
     <string name="ready_to_scan">Ready to scan</string>
     <string name="results_cleared">Results cleared</string>
     

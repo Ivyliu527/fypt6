@@ -2,6 +2,10 @@ package com.example.tonbo_app;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.ColorMatrix;
+import android.graphics.ColorMatrixColorFilter;
+import android.graphics.Paint;
 import android.util.Log;
 
 import com.google.mlkit.vision.common.InputImage;
@@ -24,6 +28,12 @@ public class OCRHelper {
     private com.google.mlkit.vision.text.TextRecognizer chineseTextRecognizer;
     private com.google.mlkit.vision.text.TextRecognizer englishTextRecognizer;
     private Context context;
+
+    private static class OcrCandidate {
+        List<OCRResult> results;
+        String fullText;
+        float score;
+    }
 
     public OCRHelper(Context context) {
         this.context = context;
@@ -53,101 +63,93 @@ public class OCRHelper {
      * @return 識別結果列表
      */
     public List<OCRResult> recognizeText(Bitmap bitmap) {
-        List<OCRResult> results = new ArrayList<>();
+        return recognizeText(bitmap, 0);
+    }
+
+    /**
+     * 識別圖片中的文字（支持旋轉角度與圖片預處理）
+     *
+     * @param bitmap 要識別的圖片
+     * @param rotationDegrees 相機幀旋轉角度（由 ImageProxy.getImageInfo().getRotationDegrees() 提供）
+     */
+    public List<OCRResult> recognizeText(Bitmap bitmap, int rotationDegrees) {
+        List<OCRResult> empty = new ArrayList<>();
+        if (bitmap == null) return empty;
 
         try {
-            // 創建輸入圖像
-            InputImage image = InputImage.fromBitmap(bitmap, 0);
+            Bitmap preprocessed = preprocessForOcr(bitmap);
+            InputImage image = InputImage.fromBitmap(preprocessed, rotationDegrees);
 
-            // 使用CountDownLatch等待異步結果
-            CountDownLatch latch = new CountDownLatch(1);
+            OcrCandidate chinese = new OcrCandidate();
+            OcrCandidate english = new OcrCandidate();
 
-            // 先嘗試中文識別器
-            chineseTextRecognizer.process(image)
+            CountDownLatch latch = new CountDownLatch(2);
+
+            chineseTextRecognizer
+                    .process(image)
                     .addOnSuccessListener(visionText -> {
-                        // 處理識別結果
-                        processTextRecognitionResult(visionText, results, "中文識別");
-                        
-                        // 如果中文識別結果較少，再嘗試英文識別器
-                        if (results.isEmpty() || results.size() < 2) {
-                            englishTextRecognizer.process(image)
-                                    .addOnSuccessListener(englishText -> {
-                                        processTextRecognitionResult(englishText, results, "英文識別");
-                                        latch.countDown();
-                                    })
-                                    .addOnFailureListener(e -> {
-                                        Log.w(TAG, "英文OCR識別失敗: " + e.getMessage());
-                                        latch.countDown();
-                                    });
-                        } else {
-                            latch.countDown();
-                        }
+                        List<OCRResult> tmp = new ArrayList<>();
+                        processTextRecognitionResult(visionText, tmp, "中文識別");
+                        chinese.results = tmp;
+                        chinese.fullText = visionText != null ? visionText.getText() : null;
+                        chinese.score = scoreOcrText(chinese.fullText);
+                        latch.countDown();
                     })
                     .addOnFailureListener(e -> {
-                        Log.e(TAG, "中文OCR識別失敗，嘗試英文識別: " + e.getMessage());
-                        // 中文識別失敗，嘗試英文識別
-                        englishTextRecognizer.process(image)
-                                .addOnSuccessListener(englishText -> {
-                                    processTextRecognitionResult(englishText, results, "英文識別");
-                                    latch.countDown();
-                                })
-                                .addOnFailureListener(e2 -> {
-                                    Log.e(TAG, "英文OCR識別也失敗: " + e2.getMessage());
-                                    latch.countDown();
-                                });
+                        Log.w(TAG, "中文OCR識別失敗: " + e.getMessage());
+                        chinese.score = 0f;
+                        latch.countDown();
                     });
 
-            // 等待識別完成（最多等待10秒）
+            englishTextRecognizer
+                    .process(image)
+                    .addOnSuccessListener(visionText -> {
+                        List<OCRResult> tmp = new ArrayList<>();
+                        processTextRecognitionResult(visionText, tmp, "英文識別");
+                        english.results = tmp;
+                        english.fullText = visionText != null ? visionText.getText() : null;
+                        english.score = scoreOcrText(english.fullText);
+                        latch.countDown();
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.w(TAG, "英文OCR識別失敗: " + e.getMessage());
+                        english.score = 0f;
+                        latch.countDown();
+                    });
+
             latch.await();
 
+            OcrCandidate best = chinese.score >= english.score ? chinese : english;
+            if (best != null && best.results != null && !best.results.isEmpty()) {
+                return best.results;
+            }
+
+            return empty;
         } catch (Exception e) {
             Log.e(TAG, "OCR處理異常: " + e.getMessage());
+            return empty;
         }
-
-        return results;
     }
 
     /**
      * 處理文字識別結果
      */
     private void processTextRecognitionResult(Text visionText, List<OCRResult> results, String recognizerType) {
+        if (visionText == null) return;
+
         String fullText = visionText.getText();
         Log.d(TAG, "識別到的完整文字: " + fullText);
 
         if (fullText != null && !fullText.trim().isEmpty()) {
+            String normalized = normalizeOcrText(fullText);
+
             // 創建主要識別結果
             OCRResult mainResult = new OCRResult(
-                    fullText,
+                    normalized,
                     recognizerType + "完整文字",
-                    calculateConfidence(fullText)
+                    calculateConfidence(normalized)
             );
             results.add(mainResult);
-
-            // 處理文字塊
-            for (Text.TextBlock block : visionText.getTextBlocks()) {
-                String blockText = block.getText();
-                if (blockText != null && !blockText.trim().isEmpty()) {
-                    OCRResult blockResult = new OCRResult(
-                            blockText,
-                            recognizerType + "文字塊",
-                            calculateConfidence(blockText)
-                    );
-                    results.add(blockResult);
-                }
-
-                // 處理文字行
-                for (Text.Line line : block.getLines()) {
-                    String lineText = line.getText();
-                    if (lineText != null && !lineText.trim().isEmpty()) {
-                        OCRResult lineResult = new OCRResult(
-                                lineText,
-                                recognizerType + "文字行",
-                                calculateConfidence(lineText)
-                        );
-                        results.add(lineResult);
-                    }
-                }
-            }
         }
     }
 
@@ -183,6 +185,94 @@ public class OCRHelper {
         }
 
         return Math.min(confidence, 1.0f);
+    }
+
+    private float scoreOcrText(String text) {
+        if (text == null) return 0f;
+        String normalized = normalizeOcrText(text);
+        if (normalized.isEmpty()) return 0f;
+
+        int chineseCount = 0;
+        int latinCount = 0;
+        for (int i = 0; i < normalized.length(); i++) {
+            char ch = normalized.charAt(i);
+            if ((ch >= 0x4E00 && ch <= 0x9FFF) || (ch >= 0x3400 && ch <= 0x4DBF) || (ch >= 0x20000 && ch <= 0x2A6DF)) {
+                chineseCount++;
+            } else if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')) {
+                latinCount++;
+            }
+        }
+
+        // 尽量偏向“更像文字”的结果：越长越好；同时尽量让含中文/英文字符更多的结果得分更高
+        return Math.min(1.5f * normalized.length() + 10f * chineseCount + 5f * latinCount, 1_000_000f);
+    }
+
+    private Bitmap preprocessForOcr(Bitmap source) {
+        try {
+            int w = source.getWidth();
+            int h = source.getHeight();
+            if (w <= 0 || h <= 0) return source;
+
+            // 中心裁剪：去掉上下左右的大面积噪声，提高文字区域占比
+            // 不要裁得太狠，避免把文字边缘裁掉
+            float cropRatio = 0.96f;
+            int cropW = Math.max(1, (int) (w * cropRatio));
+            int cropH = Math.max(1, (int) (h * cropRatio));
+            int left = (w - cropW) / 2;
+            int top = (h - cropH) / 2;
+            Bitmap cropped = Bitmap.createBitmap(source, left, top, cropW, cropH);
+
+            // 统一缩放：让文字尺寸落在更合适的范围
+            int targetW = 1024;
+            int targetH = (int) ((float) cropH * (targetW / (float) cropW));
+            Bitmap scaled = Bitmap.createScaledBitmap(cropped, targetW, targetH, true);
+
+            // 灰度 + 轻微对比度增强（ML Kit 对这种输入通常更稳）
+            Bitmap gray = Bitmap.createBitmap(scaled.getWidth(), scaled.getHeight(), Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(gray);
+
+            Paint paint = new Paint();
+            ColorMatrix saturation = new ColorMatrix();
+            saturation.setSaturation(0f);
+            paint.setColorFilter(new ColorMatrixColorFilter(saturation));
+            canvas.drawBitmap(scaled, 0, 0, paint);
+
+            float contrast = 1.15f;
+            float translate = (1f - contrast) * 128f;
+            ColorMatrix contrastMatrix = new ColorMatrix(new float[]{
+                    contrast, 0, 0, 0, translate,
+                    0, contrast, 0, 0, translate,
+                    0, 0, contrast, 0, translate,
+                    0, 0, 0, 1, 0
+            });
+            Paint contrastPaint = new Paint();
+            contrastPaint.setColorFilter(new ColorMatrixColorFilter(contrastMatrix));
+
+            Bitmap result = Bitmap.createBitmap(gray.getWidth(), gray.getHeight(), Bitmap.Config.ARGB_8888);
+            Canvas contrastCanvas = new Canvas(result);
+            contrastCanvas.drawBitmap(gray, 0, 0, contrastPaint);
+
+            return result;
+        } catch (Exception e) {
+            Log.w(TAG, "OCR preProcess failed: " + e.getMessage());
+            return source;
+        }
+    }
+
+    private String normalizeOcrText(String text) {
+        if (text == null) return "";
+
+        String s = text.replace('\n', ' ')
+                .replace('\r', ' ')
+                .replace('\t', ' ')
+                .replaceAll("\\s+", " ")
+                .trim();
+
+        // 去掉中英文字符间多余空格（尤其是中文分隔）
+        s = s.replaceAll("(?<=[\\u4E00-\\u9FFF])\\s+(?=[\\u4E00-\\u9FFF])", "");
+        s = s.replaceAll("\\s+([，。！？：；,\\.!?;:])", "$1");
+        s = s.replaceAll("([，。！？：；,\\.!?;:])\\s+", "$1");
+        return s;
     }
 
     /**

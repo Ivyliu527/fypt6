@@ -122,7 +122,7 @@
             android:id="@+id/resultsTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="掃描結果"
+            android:text="@string/scan_results_title"
             android:textColor="@color/white"
             android:textSize="18sp"
             android:textStyle="bold"
