@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="#000000">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="20dp"
+            android:paddingBottom="16dp"
+            android:background="#000000">
+
+            <TextView
+                android:id="@+id/roleAppTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/app_name"
+                android:textColor="#FFFFFF"
+                android:textSize="45sp"
+                android:textStyle="bold"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:contentDescription="@string/app_name"
+                android:minHeight="48dp" />
+
+            <Button
+                android:id="@+id/roleLanguageButton"
+                android:layout_width="80dp"
+                android:layout_height="72dp"
+                android:text="@string/language_button_cantonese"
+                android:textSize="22sp"
+                android:textColor="#FFFFFF"
+                android:background="@drawable/button_language_background"
+                android:backgroundTint="@null"
+                android:contentDescription="@string/language_button_desc_prefix"
+                android:minHeight="72dp"
+                android:minWidth="80dp"
+                android:elevation="4dp"
+                android:stateListAnimator="@null"
+                android:gravity="center" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/roleSelectionHeading"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/role_selection_title"
+            android:textColor="#4FC3F7"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:id="@+id/roleSelectionHint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/role_selection_hint"
+            android:textColor="#CCCCCC"
+            android:textSize="16sp"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginBottom="24dp" />
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:fillViewport="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingHorizontal="20dp"
+                android:paddingBottom="24dp">
+
+                <Button
+                    android:id="@+id/btnRoleUser"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="132dp"
+                    android:text="@string/role_btn_visually_impaired"
+                    android:textColor="#C62828"
+                    android:textSize="26sp"
+                    android:textStyle="bold"
+                    android:background="@drawable/function_item_background"
+                    android:backgroundTint="@null"
+                    android:padding="28dp"
+                    android:layout_marginBottom="16dp"
+                    android:contentDescription="@string/role_btn_visually_impaired" />
+
+                <Button
+                    android:id="@+id/btnRoleVolunteer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="100dp"
+                    android:text="@string/role_btn_volunteer"
+                    android:textColor="@color/text_card"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:background="@drawable/function_item_background"
+                    android:backgroundTint="@null"
+                    android:padding="20dp"
+                    android:contentDescription="@string/role_btn_volunteer" />
+            </LinearLayout>
+        </ScrollView>
+    </LinearLayout>
+</FrameLayout>

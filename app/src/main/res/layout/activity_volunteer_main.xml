@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="#000000">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="20dp"
+            android:background="#000000">
+
+            <TextView
+                android:id="@+id/volunteerAppTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/volunteer_main_title"
+                android:textColor="#FFFFFF"
+                android:textSize="32sp"
+                android:textStyle="bold"
+                android:maxLines="2"
+                android:contentDescription="@string/volunteer_main_title"
+                android:minHeight="48dp" />
+
+            <Button
+                android:id="@+id/volunteerLanguageButton"
+                android:layout_width="80dp"
+                android:layout_height="72dp"
+                android:text="@string/language_button_cantonese"
+                android:textSize="22sp"
+                android:textColor="#FFFFFF"
+                android:background="@drawable/button_language_background"
+                android:backgroundTint="@null"
+                android:contentDescription="@string/language_button_desc_prefix"
+                android:minHeight="72dp"
+                android:minWidth="80dp"
+                android:elevation="4dp"
+                android:stateListAnimator="@null"
+                android:gravity="center" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/volunteerWelcomeText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/volunteer_main_welcome"
+            android:textColor="#CCCCCC"
+            android:textSize="18sp"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginBottom="24dp" />
+
+        <Button
+            android:id="@+id/btnVolunteerInstantAssist"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="100dp"
+            android:layout_marginHorizontal="20dp"
+            android:text="@string/instant_assistance_title"
+            android:textColor="@color/text_card"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:background="@drawable/function_item_background"
+            android:backgroundTint="@null"
+            android:padding="20dp"
+            android:contentDescription="@string/instant_assistance_desc" />
+    </LinearLayout>
+</FrameLayout>

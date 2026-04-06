@@ -39,18 +39,26 @@ public class SplashActivity extends AppCompatActivity {
     }
     
     private void checkLoginStatusAndNavigate() {
-        // 檢查手勢登入是否啟用
+        String role = RolePreferences.getRole(this);
+        if (role == null || role.isEmpty()) {
+            startActivity(new Intent(SplashActivity.this, RoleSelectionActivity.class));
+            finish();
+            return;
+        }
+        if (RolePreferences.ROLE_VOLUNTEER.equals(role)) {
+            startActivity(new Intent(SplashActivity.this, VolunteerMainActivity.class));
+            finish();
+            return;
+        }
+
+        // 視障用戶：沿用原有手勢登入 / 主頁邏輯
         boolean gestureLoginEnabled = GestureManagementActivity.isGestureLoginEnabled(this);
-        
         Intent intent;
         if (gestureLoginEnabled) {
-            // 如果啟用了手勢登入，跳轉到手勢輸入頁面
             intent = new Intent(SplashActivity.this, GestureInputActivity.class);
         } else {
-            // 否則直接進入主頁
             intent = new Intent(SplashActivity.this, MainActivity.class);
         }
-        
         startActivity(intent);
         finish();
     }

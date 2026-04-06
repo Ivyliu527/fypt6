@@ -394,5 +394,16 @@
     <string name="location_permission_denied_nav">位置權限被拒絕，無法開始導航</string>
     <string name="nav_location_denied_obstacle_only">未取得位置權限，當前僅提供前方障礙播報</string>
     <string name="environment_recognition_starting">正在啟動環境識別，請將攝像頭對準前方路段</string>
-    
+
+    <string name="instant_assistance_title">即時協助</string>
+    <string name="instant_assistance_desc">一鍵呼叫志工獲得即時協助</string>
+
+    <string name="role_selection_title">選擇你的身份</string>
+    <string name="role_selection_hint">請點擊下面其中一個選項繼續。</string>
+    <string name="role_btn_visually_impaired">我是視障用戶</string>
+    <string name="role_btn_volunteer">我是志願者</string>
+    <string name="role_selection_announce">請選擇你的身份：視障用戶，或者志願者。</string>
+    <string name="volunteer_main_title">志願者</string>
+    <string name="volunteer_main_welcome">多謝你提供協助。可進入即時協助功能支援用戶。</string>
+    <string name="volunteer_main_announce">志願者主頁。準備好協助時可打開即時協助。</string>
 </resources>

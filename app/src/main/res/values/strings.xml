@@ -426,8 +426,8 @@
     <string name="high_precision_disabled">高精度模式已關閉，節省電量</string>
     
     <!-- 即時協助相關 -->
-    <string name="instant_assistance_title">即時協助</string>
-    <string name="instant_assistance_desc">一鍵呼叫志工獲得即時協助</string>
+    <string name="instant_assistance_title">Live Assistance</string>
+    <string name="instant_assistance_desc">One-tap call to reach a volunteer for live help</string>
     <string name="ready_to_assist">準備協助</string>
     <string name="checking_connection">檢查連接中...</string>
     <string name="quick_call_desc">一鍵呼叫志工</string>
@@ -501,4 +501,14 @@
     <string name="please_enter_destination">Please enter a destination</string>
     <string name="location_permission_denied_nav">Location permission denied. Navigation cannot start.</string>
     <string name="nav_location_denied_obstacle_only">Location permission denied. Only forward obstacle alerts are available.</string>
+
+    <!-- Role selection (first launch) -->
+    <string name="role_selection_title">Choose your role</string>
+    <string name="role_selection_hint">Select one option below to continue.</string>
+    <string name="role_btn_visually_impaired">I am a visually impaired user</string>
+    <string name="role_btn_volunteer">I am a volunteer</string>
+    <string name="role_selection_announce">Please choose your role: visually impaired user, or volunteer.</string>
+    <string name="volunteer_main_title">Volunteer</string>
+    <string name="volunteer_main_welcome">Thank you for helping. You can open Live Assistance to support users.</string>
+    <string name="volunteer_main_announce">Volunteer home. Open Live Assistance when you are ready to help.</string>
 </resources>

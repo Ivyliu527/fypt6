@@ -56,6 +56,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".RoleSelectionActivity"
+            android:exported="false"
+            android:label="@string/role_selection_title" />
+
+        <activity
+            android:name=".VolunteerMainActivity"
+            android:exported="false"
+            android:label="@string/volunteer_main_title" />
         
         <!-- Main Activity - 主頁面 -->
         <activity
